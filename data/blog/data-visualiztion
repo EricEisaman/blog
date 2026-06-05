@@ -1,0 +1,98 @@
+---
+title: Data Visualization
+date: '2026-06-03'
+tags: ['markdown', 'code', 'data visualization', 'JupiterLite']
+draft: false
+summary: Example of a markdown file with code blocks and syntax highlighting,
+which provides a walk-through of a data visualization flow using JupyterLite.
+---
+
+## Overview
+
+This section introduces the data used in the blog, explains what kind of data it is, and shows why it matters. The goal is to help readers understand that this is **decision-making data** that can support the organization of a specific group, even if they are not familiar with the terms or categories used.
+
+The data contains information about labor force status, marital status, education, weight, and state. In simple terms, it helps show patterns about who is working, who is not, and how those patterns may differ across groups and locations. That makes it useful for people who need to understand community trends, plan services, or make informed choices based on real numbers.
+
+This information is important because it can reveal where needs are greatest, which groups may need support, and how conditions differ across states or populations. For example, an organization can use this kind of data to better plan programs, target outreach, or understand who they are serving. In that way, the data becomes more than numbers — it becomes information that supports better planning and stronger decisions.
+
+## Subheading
+
+## Description
+
+This data matters because it helps people and organizations see patterns clearly, understand the needs of different groups, and make better decisions based on evidence rather than guesswork.
+
+*Import Dependencies 🐍*
+
+Most projects rely on pre-written code libraries/modules whether written by the Notebook
+author or by a third-party. When importing from libraries, it is common to use aliases
+such as pd is used below as a shorthand for pandas.
+
+```python
+# Dependency Imports
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
+from js import fetch
+```
+*Helper function(s) 🐍*
+
+Helper function enable us to write clean human readable code.
+
+```python
+# Helper function which uses the browser's built-in fetch API
+async def get_json(url):
+    resp = await fetch(url)
+    txt = await resp.text()
+    return json.loads(txt)
+```
+
+
+# Data Acquisitiom
+url = "https://api.census.gov/data/2025/cps/basic/may?get=PEMLR,PWSSWGT,PEMARITL,PEEDUCA&for=state:*&key=YOURAPIKEY"
+data = await get_json(url)
+
+# Data Wrangling
+df = pd.DataFrame(data[1:], columns=data[0])
+df["PWSSWGT"] = pd.to_numeric(df["PWSSWGT"], errors="coerce")
+df["PEMLR"] = pd.to_numeric(df["PEMLR"], errors="coerce")
+df["state"] = pd.to_numeric(df["state"], errors="coerce")
+
+# Meaningful labels
+pemlr_labels = {
+    -1: "Not in universe",
+    1: "Employed",
+    2: "Unemployed",
+    3: "Unemployed, on layoff",
+    4: "Not in labor force",
+    5: "Unknown",
+    6: "Armed forces",
+    7: "Other"
+}
+
+# Graph 1: Average weighted count by labor force status
+summary = df.groupby("PEMLR", as_index=False)["PWSSWGT"].mean().sort_values("PWSSWGT", ascending=False)
+summary["Label"] = summary["PEMLR"].map(lambda x: pemlr_labels.get(int(x), str(x)))
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.bar(summary["Label"], summary["PWSSWGT"], color="steelblue")
+ax.set_title("Average PWSSWGT by Labor Force Status")
+ax.set_xlabel("Labor force status (PEMLR)")
+ax.set_ylabel("Average PWSSWGT")
+plt.xticks(rotation=30, ha="right")
+plt.tight_layout()
+plt.show()
+
+# Graph 2: Top 10 states by average weighted count
+state_summary = df.groupby("state", as_index=False)["PWSSWGT"].mean().sort_values("PWSSWGT", ascending=False).head(10)
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.bar(state_summary["state"].astype(str), state_summary["PWSSWGT"], color="darkorange")
+ax.set_title("Top 10 States by Average PWSSWGT")
+ax.set_xlabel("State")
+ax.set_ylabel("Average PWSSWGT")
+plt.tight_layout()
+plt.show()# Dependency Imports
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
+from js import fetch
